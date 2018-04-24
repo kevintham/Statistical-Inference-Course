@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r, message=FALSE}
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(knitr, dplyr, ggplot2, tidyr, hexbin, timeDate, grid, gridExtra, gtable)
+pacman::p_load(knitr, dplyr, ggplot2, tidyr, rcompanion)
 ```
 
 We set the seed to ensure that the following analysis is reproducible
@@ -28,8 +28,17 @@ set.seed(123)
 We prepare a thousand repetitions of 40 samples drawn from an exponential distribution.
 
 ```{r}
-rawdat <- rexp(40000, rate = 0.2)
-matdat <- matrix(rawdat, 1000, 40)
+lambda <- 0.2
+n <- 40
+rep <- 1000
+rawdat <- rexp(40000, rate = lambda)
+matdat <- matrix(rawdat, rep, n)
+```
+
+```{r}
+th_mean <- 1/lambda
+th_var <- (1/lambda)^2/n
+th_sd <- sqrt(th_var)
 ```
 
 From our simulated data we can obtain the sample mean:
@@ -40,12 +49,95 @@ sample_mean <- mean(means)
 variance <- var(means)
 
 print(variance)
+```
+
+```{r, fig.align='center'}
+bw = 0.3
 
 df_means <- data.frame('means'= means)
-ggplot(df_means, aes(means)) + geom_histogram(binwidth=0.3)
+
+ggplot(df_means, aes(means)) + geom_histogram(aes(y=..density..), binwidth=bw) +
+  stat_function(fun=function(means) dnorm(means, mean=th_mean, sd=th_sd)) +
+  labs(title='Scaled Histogram of means drawn from exponential distribution',
+       x = 'Means', y = 'Density')
 ```
 
 
 ## Inferential Data Analysis
 
+In this section, we will analyse the dataset named 'ToothGrowth' in the R datasets package. We will undertake a statistical study of the data in order to test the effect of Vitamin C on the tooth growth of guinea pigs.
 
+### Exploratory Analysis
+
+First we begin by loading the dataset and calling the `head()` and `str()` functions to give us a brief overview of the data.
+
+```{r}
+data(ToothGrowth)
+head(ToothGrowth)
+str(ToothGrowth)
+```
+
+As we can see, the dataset contains three variables and 60 observations. The variables correspond to:
+
+1. `len`: Tooth length
+2. `supp`: Supplement type (VC:ascorbic acid, OJ:orange juice)
+3. `dose`: Dose in milligrams/day
+
+Since we want to compare numeric variables (`len`) against categorical data (`supp` and `dose`), we can utilise boxplots to display our dataset.
+
+```{r, fig.align='center'}
+ToothGrowth$dose <- as.factor(ToothGrowth$dose)
+ggplot(ToothGrowth, aes(x=dose,y=len)) + 
+  geom_boxplot(aes(fill=dose)) + 
+  labs(title="Tooth Growth of Guinea Pigs by Dosage(mg)",
+       x="Dosage(mg)", y="Tooth Length")
+```
+
+```{r, fig.align='center'}
+ggplot(ToothGrowth, aes(x=supp,y=len)) + 
+  geom_boxplot(aes(fill=supp)) + 
+  labs(title="Tooth Growth of Guinea Pigs by Supplement type",
+       x="Supplement Type", y="Tooth Length")
+```
+
+```{r, fig.align='center'}
+ggplot(ToothGrowth, aes(x=supp,y=len)) + 
+  geom_boxplot(aes(fill=supp)) + 
+  facet_grid(.~ dose) + 
+  labs(title="Tooth Growth of Guinea Pigs by Supplement type and Dosage(mg)",
+       x="Supplement Type", y="Tooth Length")
+```
+
+```{r, fig.align='center'}
+ggplot(ToothGrowth, aes(x=dose,y=len)) + 
+  geom_boxplot(aes(fill=dose)) + 
+  facet_grid(.~ supp) + 
+  labs(title="Tooth Growth of Guinea Pigs by Supplement type and Dosage(mg)",
+       x="Dosage(mg)", y="Tooth Length")
+```
+
+The boxplot highlights certain features of the data:
+
+1. Increasing dosage appears to be correlated with increasing tooth length.
+2. For 0.5mg and 1.0mg dosage, orange juice appears to result in larger toothlength than ascorbic acid, however for 2.0mg dosage it appears that the medians of the distributions are very similar.
+
+### Confidence Interval Testing for Supplement Type
+
+In order to determine if the supplement type has an effect on the tooth growth of guinea pigs, and if possible, the magnitude of the effect. Therefore we will utilise confidence intervals in order to achieve this.
+
+The following assumptions are made:
+
+* Tooth growth follows a normal distribution (may or may not have different means and variance for different variables)
+* Within each variable, tooth growth is independent and identically distributed (i.i.d.)
+
+The null hypothesis is that the supplement type has no effect on tooth growth, that is, the lengths of guinea pig teeth are drawn from the same distributions regardless of supplement type, with the same mean and variance.
+
+The confidence intervals at the 95% level are calculated to check this hypothesis.
+
+```{r}
+groupwiseMean(len ~ supp, data = ToothGrowth, conf = 0.95, digits = 3)
+```
+
+```{r}
+
+```
