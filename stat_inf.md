@@ -10,7 +10,7 @@ output:
 
 
 
-## Simulation Exercise
+# Simulation Exercise
 
 
 ```r
@@ -73,11 +73,11 @@ ggplot(df_means, aes(means)) + geom_histogram(aes(y=..density..), binwidth=bw) +
 <img src="stat_inf_files/figure-html/unnamed-chunk-6-1.png" style="display: block; margin: auto;" />
 
 
-## Inferential Data Analysis
+# Inferential Data Analysis
 
 In this section, we will analyse the dataset named 'ToothGrowth' in the R datasets package. We will undertake a statistical study of the data in order to test the effect of Vitamin C on the tooth growth of guinea pigs.
 
-### Exploratory Analysis
+## Exploratory Analysis
 
 First we begin by loading the dataset and calling the `head()` and `str()` functions to give us a brief overview of the data.
 
@@ -164,28 +164,19 @@ The boxplot highlights certain features of the data:
 1. Increasing dosage appears to be correlated with increasing tooth length.
 2. For 0.5mg and 1.0mg dosage, orange juice appears to result in larger toothlength than ascorbic acid, however for 2.0mg dosage it appears that the medians of the distributions are very similar.
 
-### Confidence Interval Testing for Supplement Type
+## Hypothesis Testing 
 
-In order to determine if the supplement type has an effect on the tooth growth of guinea pigs, and if possible, the magnitude of the effect. Therefore we will utilise confidence intervals in order to achieve this.
+In order to determine if the supplement type or dosage has an effect on the tooth growth of guinea pigs, and if possible, the magnitude of the effect. Therefore we will utilise hypothesis testing in order to achieve this.
+
+In hypothesis testing, we have a null hypothesis ($H_0$, representing status quo or independence from variable being tested) and an alternative hypothesis ($H_1$, representing a positive effect). The aim is employ statistics to decide whether the null hypothesis $H_0$ should be rejected or not.
+
+This is done by taking the difference in the means of each population being tested (for eg. splitting the data based on supplement type). The difference in means is treated as a random variable and the probability of it being zero (variable has no effect), the p-value, is calculated. If it is below a certain level, which we specify to be 0.05, then we reject the null hypothesis as the probability of the null hypothesis being true is low. 
 
 The following assumptions are made:
 
 * Tooth growth follows a normal distribution (may or may not have different means and variance for different variables)
 * Within each variable, tooth growth is independent and identically distributed (i.i.d.)
 
-The null hypothesis is that the supplement type has no effect on tooth growth, that is, the lengths of guinea pig teeth are drawn from the same distributions regardless of supplement type, with the same mean and variance.
 
-The confidence intervals at the 95% level are calculated to check this hypothesis.
-
-
-```r
-groupwiseMean(len ~ supp, data = ToothGrowth, conf = 0.95, digits = 3)
-```
-
-```
-##   supp  n Mean Conf.level Trad.lower Trad.upper
-## 1   OJ 30 20.7       0.95       18.2       23.1
-## 2   VC 30 17.0       0.95       13.9       20.0
-```
 
 
