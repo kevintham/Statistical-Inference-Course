@@ -1,7 +1,7 @@
 ---
-title: "Statistical Inference Project"
+title: "Inferential Data Analysis"
 author: "Kevin Tham"
-date: "April 23, 2018"
+date: "April 25, 2018"
 output:
   html_document:
     keep_md: true
@@ -10,67 +10,6 @@ output:
 
 
 
-# Simulation Exercise
-
-
-```r
-if (!require("pacman")) install.packages("pacman")
-pacman::p_load(knitr, dplyr, ggplot2, tidyr, rcompanion)
-```
-
-We set the seed to ensure that the following analysis is reproducible
-
-
-```r
-set.seed(123)
-```
-
-We prepare a thousand repetitions of 40 samples drawn from an exponential distribution.
-
-
-```r
-lambda <- 0.2
-n <- 40
-rep <- 1000
-rawdat <- rexp(40000, rate = lambda)
-matdat <- matrix(rawdat, rep, n)
-```
-
-
-```r
-th_mean <- 1/lambda
-th_var <- (1/lambda)^2/n
-th_sd <- sqrt(th_var)
-```
-
-From our simulated data we can obtain the sample mean:
-
-
-```r
-means <- apply(matdat, 1, mean)
-sample_mean <- mean(means)
-variance <- var(means)
-
-print(variance)
-```
-
-```
-## [1] 0.6088292
-```
-
-
-```r
-bw = 0.3
-
-df_means <- data.frame('means'= means)
-
-ggplot(df_means, aes(means)) + geom_histogram(aes(y=..density..), binwidth=bw) +
-  stat_function(fun=function(means) dnorm(means, mean=th_mean, sd=th_sd)) +
-  labs(title='Scaled Histogram of means drawn from exponential distribution',
-       x = 'Means', y = 'Density')
-```
-
-<img src="stat_inf_files/figure-html/unnamed-chunk-6-1.png" style="display: block; margin: auto;" />
 
 
 # Inferential Data Analysis
@@ -82,11 +21,6 @@ In this section, we will analyse the dataset named 'ToothGrowth' in the R datase
 First we begin by loading the dataset and calling the `head()` and `str()` functions to give us a brief overview of the data.
 
 
-```r
-data(ToothGrowth)
-head(ToothGrowth)
-```
-
 ```
 ##    len supp dose
 ## 1  4.2   VC  0.5
@@ -97,10 +31,6 @@ head(ToothGrowth)
 ## 6 10.0   VC  0.5
 ```
 
-```r
-str(ToothGrowth)
-```
-
 ```
 ## 'data.frame':	60 obs. of  3 variables:
 ##  $ len : num  4.2 11.5 7.3 5.8 6.4 10 11.2 11.2 5.2 7 ...
@@ -108,7 +38,7 @@ str(ToothGrowth)
 ##  $ dose: num  0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 ...
 ```
 
-As we can see, the dataset contains three variables and 60 observations. The variables correspond to:
+The dataset contains three variables and 60 observations. The variables correspond to:
 
 1. `len`: Tooth length
 2. `supp`: Supplement type (VC:ascorbic acid, OJ:orange juice)
@@ -116,48 +46,7 @@ As we can see, the dataset contains three variables and 60 observations. The var
 
 Since we want to compare numeric variables (`len`) against categorical data (`supp` and `dose`), we can utilise boxplots to display our dataset.
 
-
-```r
-ToothGrowth$dose <- as.factor(ToothGrowth$dose)
-ggplot(ToothGrowth, aes(x=dose,y=len)) + 
-  geom_boxplot(aes(fill=dose)) + 
-  labs(title="Tooth Growth of Guinea Pigs by Dosage(mg)",
-       x="Dosage(mg)", y="Tooth Length")
-```
-
-<img src="stat_inf_files/figure-html/unnamed-chunk-8-1.png" style="display: block; margin: auto;" />
-
-
-```r
-ggplot(ToothGrowth, aes(x=supp,y=len)) + 
-  geom_boxplot(aes(fill=supp)) + 
-  labs(title="Tooth Growth of Guinea Pigs by Supplement type",
-       x="Supplement Type", y="Tooth Length")
-```
-
-<img src="stat_inf_files/figure-html/unnamed-chunk-9-1.png" style="display: block; margin: auto;" />
-
-
-```r
-ggplot(ToothGrowth, aes(x=supp,y=len)) + 
-  geom_boxplot(aes(fill=supp)) + 
-  facet_grid(.~ dose) + 
-  labs(title="Tooth Growth of Guinea Pigs by Supplement type and Dosage(mg)",
-       x="Supplement Type", y="Tooth Length")
-```
-
-<img src="stat_inf_files/figure-html/unnamed-chunk-10-1.png" style="display: block; margin: auto;" />
-
-
-```r
-ggplot(ToothGrowth, aes(x=dose,y=len)) + 
-  geom_boxplot(aes(fill=dose)) + 
-  facet_grid(.~ supp) + 
-  labs(title="Tooth Growth of Guinea Pigs by Supplement type and Dosage(mg)",
-       x="Dosage(mg)", y="Tooth Length")
-```
-
-<img src="stat_inf_files/figure-html/unnamed-chunk-11-1.png" style="display: block; margin: auto;" />
+<img src="stat_inf_files/figure-html/unnamed-chunk-3-1.png" style="display: block; margin: auto;" /><img src="stat_inf_files/figure-html/unnamed-chunk-3-2.png" style="display: block; margin: auto;" />
 
 The boxplot highlights certain features of the data:
 
@@ -177,6 +66,39 @@ The following assumptions are made:
 * Tooth growth follows a normal distribution (may or may not have different means and variance for different variables)
 * Within each variable, tooth growth is independent and identically distributed (i.i.d.)
 
+### Hypothesis Testing of Dosage Levels
+
+We begin by conducting hypothesis testing on the effect of dosage levels of Vitamin C on tooth growth. This is done by testing each possible dosage level pairwise. The null hypothesis here is that the dosage level does not affect tooth growth as a whole.
 
 
+                      t.statistic    DoF    p.value   Lower.CL   Upper.CL   Group.1.mean   Group.2.mean
+-------------------  ------------  -----  ---------  ---------  ---------  -------------  -------------
+Dose=0.5 vs Dose=1          -6.48   38.0   1.00e-07      -12.0      -6.28           10.6           19.7
+Dose=1  vs Dose=2           -4.90   37.1   1.91e-05       -9.0      -3.73           19.7           26.1
+Dose=0.5 vs Dose=2         -11.80   36.9   0.00e+00      -18.2     -12.80           10.6           26.1
 
+From the above we can see that for all three combinations, the p-value is much smaller than 0.05. The confidence intervals do not contain 0 as well. Thus, there is a less than 5% probability of obtaining the results in the data if the null hypothesis is true and we reject it. We conclude that 
+
+### Hypothesis Testing of Supplement Type
+
+Next we test the effect of supplement type on tooth growth.
+
+
+                                 t.statistic    DoF   p.value   Lower.CL   Upper.CL   Group.1.mean   Group.2.mean
+------------------------------  ------------  -----  --------  ---------  ---------  -------------  -------------
+Orange Juice vs Ascorbic Acid           1.92   55.3    0.0606     -0.171       7.57           20.7             17
+
+This time the p-value of 0.0606 is larger than the specified value of 0.05. Therefore we fail to reject the null hypothesis and conclude that there is not enough evidence that supplement type affects tooth growth as a whole. However we would like to look deeper into this as grouping the data by dosage levels might review a different picture, as is suggested by the boxplots above.
+
+### Hypothesis Testing of Supplement Type grouped by Dosage Levels
+
+Here, the data is grouped by the three different dosage levels first, and hypothesis tests are performed on each group to test the effect of supplement type.
+
+
+ t.statistic    DoF   p.value   Lower.CL   Upper.CL   OJ.mean   VC.mean   Dose
+------------  -----  --------  ---------  ---------  --------  --------  -----
+      3.1700   15.0   0.00636       1.72       8.78      13.2      7.98    0.5
+      4.0300   15.4   0.00104       2.80       9.06      22.7     16.80    1.0
+     -0.0461   14.0   0.96400      -3.80       3.64      26.1     26.10    2.0
+
+For dosage levels of 0.5mg and 1mg, the p-values are both below 0.05 with confidence intervals that do not contain zero, while for 2mg the p-value is much larger than 0.05. Therefore we reject the null hypothesis for 0.5mg and 1mg, and conclude with 95% confidence level that there is a difference in mean between the two supplement types for 0.5mg and 1mg, while there is no difference in mean for 2mg.

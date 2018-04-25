@@ -1,7 +1,7 @@
 ---
-title: "Statistical Inference Project"
+title: "Inferential Data Analysis"
 author: "Kevin Tham"
-date: "April 23, 2018"
+date: "April 25, 2018"
 output:
   html_document:
     keep_md: true
@@ -9,59 +9,15 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+rm(list=ls())
+knitr::opts_chunk$set(echo = FALSE)
 ```
-
-# Simulation Exercise
 
 ```{r, message=FALSE}
-if (!require("pacman")) install.packages("pacman")
-pacman::p_load(knitr, dplyr, ggplot2, tidyr, rcompanion)
+if (!require("pacman"))
+  install.packages("pacman", repos = "http://cran.us.r-project.org")
+pacman::p_load(knitr, dplyr, ggplot2, tidyr, grid, gridExtra)
 ```
-
-We set the seed to ensure that the following analysis is reproducible
-
-```{r}
-set.seed(123)
-```
-
-We prepare a thousand repetitions of 40 samples drawn from an exponential distribution.
-
-```{r}
-lambda <- 0.2
-n <- 40
-rep <- 1000
-rawdat <- rexp(40000, rate = lambda)
-matdat <- matrix(rawdat, rep, n)
-```
-
-```{r}
-th_mean <- 1/lambda
-th_var <- (1/lambda)^2/n
-th_sd <- sqrt(th_var)
-```
-
-From our simulated data we can obtain the sample mean:
-
-```{r}
-means <- apply(matdat, 1, mean)
-sample_mean <- mean(means)
-variance <- var(means)
-
-print(variance)
-```
-
-```{r, fig.align='center'}
-bw = 0.3
-
-df_means <- data.frame('means'= means)
-
-ggplot(df_means, aes(means)) + geom_histogram(aes(y=..density..), binwidth=bw) +
-  stat_function(fun=function(means) dnorm(means, mean=th_mean, sd=th_sd)) +
-  labs(title='Scaled Histogram of means drawn from exponential distribution',
-       x = 'Means', y = 'Density')
-```
-
 
 # Inferential Data Analysis
 
@@ -77,7 +33,7 @@ head(ToothGrowth)
 str(ToothGrowth)
 ```
 
-As we can see, the dataset contains three variables and 60 observations. The variables correspond to:
+The dataset contains three variables and 60 observations. The variables correspond to:
 
 1. `len`: Tooth length
 2. `supp`: Supplement type (VC:ascorbic acid, OJ:orange juice)
@@ -85,35 +41,32 @@ As we can see, the dataset contains three variables and 60 observations. The var
 
 Since we want to compare numeric variables (`len`) against categorical data (`supp` and `dose`), we can utilise boxplots to display our dataset.
 
-```{r, fig.align='center'}
+```{r, fig.align='center', fig.width=7.5, fig.height=3, results='hold'}
 ToothGrowth$dose <- as.factor(ToothGrowth$dose)
-ggplot(ToothGrowth, aes(x=dose,y=len)) + 
+g1 <- ggplot(ToothGrowth, aes(x=dose,y=len)) + 
   geom_boxplot(aes(fill=dose)) + 
-  labs(title="Tooth Growth of Guinea Pigs by Dosage(mg)",
+  labs(title="Tooth Growth of Guinea Pigs \n by Dosage(mg)",
        x="Dosage(mg)", y="Tooth Length")
-```
 
-```{r, fig.align='center'}
-ggplot(ToothGrowth, aes(x=supp,y=len)) + 
+g2 <- ggplot(ToothGrowth, aes(x=supp,y=len)) + 
   geom_boxplot(aes(fill=supp)) + 
-  labs(title="Tooth Growth of Guinea Pigs by Supplement type",
+  labs(title="Tooth Growth of Guinea Pigs \n by Supplement type",
        x="Supplement Type", y="Tooth Length")
-```
 
-```{r, fig.align='center'}
-ggplot(ToothGrowth, aes(x=supp,y=len)) + 
+g3 <- ggplot(ToothGrowth, aes(x=supp,y=len)) + 
   geom_boxplot(aes(fill=supp)) + 
   facet_grid(.~ dose) + 
-  labs(title="Tooth Growth of Guinea Pigs by Supplement type and Dosage(mg)",
+  labs(title="Tooth Growth of Guinea Pigs \n by Supplement type and Dosage(mg)",
        x="Supplement Type", y="Tooth Length")
-```
 
-```{r, fig.align='center'}
-ggplot(ToothGrowth, aes(x=dose,y=len)) + 
+g4 <- ggplot(ToothGrowth, aes(x=dose,y=len)) + 
   geom_boxplot(aes(fill=dose)) + 
   facet_grid(.~ supp) + 
-  labs(title="Tooth Growth of Guinea Pigs by Supplement type and Dosage(mg)",
+  labs(title="Tooth Growth of Guinea Pigs \n by Supplement type and Dosage(mg)",
        x="Dosage(mg)", y="Tooth Length")
+
+grid.arrange(g1, g2, ncol = 2)
+grid.arrange(g3, g4, ncol = 2)
 ```
 
 The boxplot highlights certain features of the data:
@@ -134,10 +87,134 @@ The following assumptions are made:
 * Tooth growth follows a normal distribution (may or may not have different means and variance for different variables)
 * Within each variable, tooth growth is independent and identically distributed (i.i.d.)
 
-```{r}
+### Hypothesis Testing of Dosage Levels
 
+We begin by conducting hypothesis testing on the effect of dosage levels of Vitamin C on tooth growth. This is done by testing each possible dosage level pairwise. The null hypothesis here is that the dosage level does not affect tooth growth as a whole.
+
+```{r, results='hold'}
+data0.5_1 <- filter(ToothGrowth, dose == 0.5 | dose == 1)
+test0.5_1 <- t.test(len ~ dose, data = data0.5_1, paired = FALSE,
+                    var.equal = FALSE, conf.level = 0.95)
+res0.5_1 <- with(test0.5_1, data.frame(
+  't-statistic' = statistic,
+  'DoF' = parameter,
+  'p-value' = p.value,
+  'Lower CL' = conf.int[1],
+  'Upper CL' = conf.int[2],
+  'Group 1 mean' = estimate[1],
+  'Group 2 mean' = estimate[2],
+  row.names = 'Dose=0.5 vs Dose=1'
+))
+
+data1_2 <- filter(ToothGrowth, dose == 1 | dose == 2)
+test1_2 <- t.test(len ~ dose, data = data1_2, paired = FALSE, 
+                  var.equal = FALSE, conf.level = 0.95)
+res1_2 <- with(test1_2, data.frame(
+  't-statistic' = statistic,
+  'DoF' = parameter,
+  'p-value' = p.value,
+  'Lower CL' = conf.int[1],
+  'Upper CL' = conf.int[2],
+  'Group 1 mean' = estimate[1],
+  'Group 2 mean' = estimate[2],
+  row.names = 'Dose=1 vs Dose=2'
+))
+
+data0.5_2 <- filter(ToothGrowth, dose == 0.5 | dose == 2)
+test0.5_2 <- t.test(len ~ dose, data = data0.5_2, paired = FALSE, 
+                    var.equal = FALSE, conf.level = 0.95)
+res0.5_2 <- with(test0.5_2, data.frame(
+  't-statistic' = statistic,
+  'DoF' = parameter,
+  'p-value' = p.value,
+  'Lower CL' = conf.int[1],
+  'Upper CL' = conf.int[2],
+  'Group 1 mean' = estimate[1],
+  'Group 2 mean' = estimate[2],
+  row.names = 'Dose=0.5 vs Dose=2'
+))
+
+res_dose <- res0.5_1 %>% bind_rows(res1_2) %>% bind_rows(res0.5_2)
+row.names(res_dose) <- c('Dose=0.5 vs Dose=1', 'Dose=1  vs Dose=2', 
+                        'Dose=0.5 vs Dose=2')
+kable(x = signif(res_dose, 3))
 ```
 
-```{r}
+From the above we can see that for all three combinations, the p-value is much smaller than 0.05. The confidence intervals do not contain 0 as well. Thus, there is a less than 5% probability of obtaining the results in the data if the null hypothesis is true and we reject it. We conclude that 
 
+### Hypothesis Testing of Supplement Type
+
+Next we test the effect of supplement type on tooth growth.
+
+```{r}
+testsup <- t.test(len ~ supp, data = ToothGrowth, paired = FALSE, 
+                  var.equal = FALSE, conf.level = 0.95)
+
+ressup <- with(testsup, data.frame(
+  't-statistic' = statistic,
+  'DoF' = parameter,
+  'p-value' = p.value,
+  'Lower CL' = conf.int[1],
+  'Upper CL' = conf.int[2],
+  'Group 1 mean' = estimate[1],
+  'Group 2 mean' = estimate[2],
+  row.names = 'Orange Juice vs Ascorbic Acid'
+))
+
+kable(x = signif(ressup, 3))
 ```
+
+This time the p-value of 0.0606 is larger than the specified value of 0.05. Therefore we fail to reject the null hypothesis and conclude that there is not enough evidence that supplement type affects tooth growth as a whole. However we would like to look deeper into this as grouping the data by dosage levels might review a different picture, as is suggested by the boxplots above.
+
+### Hypothesis Testing of Supplement Type grouped by Dosage Levels
+
+Here, the data is grouped by the three different dosage levels first, and hypothesis tests are performed on each group to test the effect of supplement type.
+
+```{r, results='hold'}
+data0.5 <- filter(ToothGrowth, dose == 0.5)
+test0.5 <- t.test(len ~ supp, data = data0.5, paired = FALSE, var.equal = FALSE, conf.level = 0.95)
+
+res0.5 <- with(test0.5, data.frame(
+  't-statistic' = statistic,
+  'DoF' = parameter,
+  'p-value' = p.value,
+  'Lower CL' = conf.int[1],
+  'Upper CL' = conf.int[2],
+  'OJ mean' = estimate[1],
+  'VC mean' = estimate[2],
+  'Dose' = 0.5
+))
+
+data1 <- filter(ToothGrowth, dose == 1)
+test1 <- t.test(len ~ supp, data = data1, paired = FALSE, var.equal = FALSE, conf.level = 0.95)
+
+res1 <- with(test1, data.frame(
+  't-statistic' = statistic,
+  'DoF' = parameter,
+  'p-value' = p.value,
+  'Lower CL' = conf.int[1],
+  'Upper CL' = conf.int[2],
+  'OJ mean' = estimate[1],
+  'VC mean' = estimate[2],
+  'Dose' = 1
+))
+
+data2 <- filter(ToothGrowth, dose == 2)
+test2 <- t.test(len ~ supp, data = data2, paired = FALSE, var.equal = FALSE, conf.level = 0.95)
+
+res2 <- with(test2, data.frame(
+  't-statistic' = statistic,
+  'DoF' = parameter,
+  'p-value' = p.value,
+  'Lower CL' = conf.int[1],
+  'Upper CL' = conf.int[2],
+  'OJ mean' = estimate[1],
+  'VC mean' = estimate[2],
+  'Dose' = 2
+))
+
+res_supdose <- res0.5 %>% bind_rows(res1) %>% bind_rows(res2)
+kable(x = signif(res_supdose, 3))
+```
+
+For dosage levels of 0.5mg and 1mg, the p-values are both below 0.05 with confidence intervals that do not contain zero, while for 2mg the p-value is much larger than 0.05. Therefore we reject the null hypothesis for 0.5mg and 1mg, and conclude with 95% confidence level that there is a difference in mean between the two supplement types for 0.5mg and 1mg, while there is no difference in mean for 2mg.
