@@ -10,29 +10,120 @@ output:
 
 
 
-# Simulation Exercise
 
-
+```r
+if (!require("pacman"))
+  install.packages("pacman", repos = "http://cran.us.r-project.org")
+pacman::p_load(knitr, dplyr, ggplot2, tidyr, grid, gridExtra)
+```
 
 ## Overview
 
-In this exercise we investigate the exponential distribution and compare it with the Central Limit Theorem. We expect that the means from a large number of identical exponential distributions will themselves form a normal distribution with known mean and standard deviation
+In this exercise we investigate the Central Limit Theorem by simulating samples drawn from an exponential distribution. We expect that the means of a large number of samples drawn from identical exponential distributions will themselves approach a normal distribution with known mean and standard deviation.
 
-We set the seed to ensure that the following analysis is reproducible:
+## Theory
+
+The Central Limit Theorem (CLT) considers a sequence of random variables $X_1, X_2,..., X_n$ drawn from a common distribution $F$ with mean $\mu$ and variance $\sigma^2$. The statement is that as $n \rightarrow \infty$, the mean
+
+\[
+S_n = \frac{X_1 + X_2 + ... + X_n}{n},
+\]
+
+which is a random variable itself, converges in distribution to a normal distribution with the same mean $\mu$ as the original distribution $F$:
+
+\[
+\bar{S_n} = \mu
+\]
+
+The variance of this normal distribution can be obtained by considering the following:
+
+\[
+\begin{aligned}
+\mathrm{Var}(S_n) &= \mathrm{Var}\left(\frac{1}{n}\sum^{n}_{i = 1} X_i\right) \\
+&= \frac{1}{n^2}\sum^{n}_{i=1}\mathrm{Var}\left(X_i\right) \\
+&= \frac{\sigma^2}{n}
+\end{aligned}
+\]
+
+## Simulation Exercise
+
+In this section, we will set out to investigate the CLT via simulating a distribution of averages sampled from exponential distributions. The means and variances of the sampled distribution will be compared with the expected theoretical mean and variance. Finally we will compare the distribution with the appropriate normal distribution it is expected to converge to by the CLT.
+
+To begin with, set the seed to ensure that the following analysis is reproducible:
 
 
+```r
+set.seed(123)
+```
 
-We prepare a thousand repetitions of 40 samples drawn from an exponential distribution.
+The probability density function of an exponential distribution is given by the following:
+
+\[
+f(x, \lambda) = 
+\begin{cases}
+\lambda e^{-\lambda x} & x \geq 0, \\
+0 & x < 0.
+\end{cases}
+\]
+
+It is defined by a single parameter, $\lambda$, otherwise known as the rate. It has a known mean of $\lambda^{-1}$ and variance of $\lambda^{-2}$.
+
+We prepare a thousand repetitions of $n=40$ samples drawn from an exponential distribution of rate $\lambda = 0.2$.
 
 
+```r
+lambda <- 0.2
+n <- 40
+rep <- 1000
+rawdat <- rexp(40000, rate = lambda)
+matdat <- matrix(rawdat, rep, n)
+```
+
+Next, we can calculate the theoretical mean and variance of the sample means.
 
 
+```r
+th_mean <- 1/lambda
+th_var <- (1/lambda)^2/n
+th_sd <- sqrt(th_var)
+```
 
 From our simulated data we can obtain the sample mean:
 
 
+```r
+means <- apply(matdat, 1, mean)
+sample_mean <- mean(means)
+variance <- var(means)
+
+results <- data.frame('Simulated' = c(sample_mean, variance),
+                      'Theoretical' = c(th_mean, th_var),
+                      row.names = c('Mean', 'Variance'))
+
+kable(x = signif(results, 3))
 ```
-## [1] 0.6088292
+
+            Simulated   Theoretical
+---------  ----------  ------------
+Mean            5.010         5.000
+Variance        0.609         0.625
+
+We can see from the above table that the simulated and theoretical values of the mean and variance of the sample means closely match. 
+
+\newpage
+
+Finally, we can compare the distribution of the sample means with an actual normal distribution by plotting a histogram of the distribution of the sample means.
+
+
+```r
+bw = 0.3
+
+df_means <- data.frame('means'= means)
+
+ggplot(df_means, aes(means)) + geom_histogram(aes(y=..density..), binwidth=bw) +
+  stat_function(fun=function(means) dnorm(means, mean=th_mean, sd=th_sd)) +
+  labs(title='Scaled Histogram of means drawn from \n exponential distribution',
+       x = 'Means', y = 'Density')
 ```
 
 <img src="CLT_files/figure-html/unnamed-chunk-6-1.png" style="display: block; margin: auto;" />

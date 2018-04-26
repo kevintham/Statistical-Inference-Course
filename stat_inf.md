@@ -102,3 +102,158 @@ Here, the data is grouped by the three different dosage levels first, and hypoth
      -0.0461   14.0   0.96400      -3.80       3.64      26.1     26.10    2.0
 
 For dosage levels of 0.5mg and 1mg, the p-values are both below 0.05 with confidence intervals that do not contain zero, while for 2mg the p-value is much larger than 0.05. Therefore we reject the null hypothesis for 0.5mg and 1mg, and conclude with 95% confidence level that there is a difference in mean between the two supplement types for 0.5mg and 1mg, while there is no difference in mean for 2mg.
+
+\newpage
+
+## Appendix (R Script)
+
+
+```r
+rm(list=ls())
+knitr::opts_chunk$set(echo = FALSE)
+if (!require("pacman"))
+  install.packages("pacman", repos = "http://cran.us.r-project.org")
+pacman::p_load(knitr, dplyr, ggplot2, tidyr, grid, gridExtra)
+
+data(ToothGrowth)
+head(ToothGrowth)
+str(ToothGrowth)
+
+ToothGrowth$dose <- as.factor(ToothGrowth$dose)
+g1 <- ggplot(ToothGrowth, aes(x=dose,y=len)) + 
+  geom_boxplot(aes(fill=dose)) + 
+  labs(title="Tooth Growth of Guinea Pigs \n by Dosage(mg)",
+       x="Dosage(mg)", y="Tooth Length")
+
+g2 <- ggplot(ToothGrowth, aes(x=supp,y=len)) + 
+  geom_boxplot(aes(fill=supp)) + 
+  labs(title="Tooth Growth of Guinea Pigs \n by Supplement type",
+       x="Supplement Type", y="Tooth Length")
+
+g3 <- ggplot(ToothGrowth, aes(x=supp,y=len)) + 
+  geom_boxplot(aes(fill=supp)) + 
+  facet_grid(.~ dose) + 
+  labs(title="Tooth Growth of Guinea Pigs \n by Supplement type and Dosage(mg)",
+       x="Supplement Type", y="Tooth Length")
+
+g4 <- ggplot(ToothGrowth, aes(x=dose,y=len)) + 
+  geom_boxplot(aes(fill=dose)) + 
+  facet_grid(.~ supp) + 
+  labs(title="Tooth Growth of Guinea Pigs \n by Supplement type and Dosage(mg)",
+       x="Dosage(mg)", y="Tooth Length")
+
+grid.arrange(g1, g2, ncol = 2)
+grid.arrange(g3, g4, ncol = 2)
+
+data0.5_1 <- filter(ToothGrowth, dose == 0.5 | dose == 1)
+test0.5_1 <- t.test(len ~ dose, data = data0.5_1, paired = FALSE,
+                    var.equal = FALSE, conf.level = 0.95)
+res0.5_1 <- with(test0.5_1, data.frame(
+  't-statistic' = statistic,
+  'DoF' = parameter,
+  'p-value' = p.value,
+  'Lower CL' = conf.int[1],
+  'Upper CL' = conf.int[2],
+  'Group 1 mean' = estimate[1],
+  'Group 2 mean' = estimate[2],
+  row.names = 'Dose=0.5 vs Dose=1'
+))
+
+data1_2 <- filter(ToothGrowth, dose == 1 | dose == 2)
+test1_2 <- t.test(len ~ dose, data = data1_2, paired = FALSE, 
+                  var.equal = FALSE, conf.level = 0.95)
+res1_2 <- with(test1_2, data.frame(
+  't-statistic' = statistic,
+  'DoF' = parameter,
+  'p-value' = p.value,
+  'Lower CL' = conf.int[1],
+  'Upper CL' = conf.int[2],
+  'Group 1 mean' = estimate[1],
+  'Group 2 mean' = estimate[2],
+  row.names = 'Dose=1 vs Dose=2'
+))
+
+data0.5_2 <- filter(ToothGrowth, dose == 0.5 | dose == 2)
+test0.5_2 <- t.test(len ~ dose, data = data0.5_2, paired = FALSE, 
+                    var.equal = FALSE, conf.level = 0.95)
+res0.5_2 <- with(test0.5_2, data.frame(
+  't-statistic' = statistic,
+  'DoF' = parameter,
+  'p-value' = p.value,
+  'Lower CL' = conf.int[1],
+  'Upper CL' = conf.int[2],
+  'Group 1 mean' = estimate[1],
+  'Group 2 mean' = estimate[2],
+  row.names = 'Dose=0.5 vs Dose=2'
+))
+
+res_dose <- res0.5_1 %>% bind_rows(res1_2) %>% bind_rows(res0.5_2)
+row.names(res_dose) <- c('Dose=0.5 vs Dose=1', 'Dose=1  vs Dose=2', 
+                        'Dose=0.5 vs Dose=2')
+kable(x = signif(res_dose, 3))
+
+testsup <- t.test(len ~ supp, data = ToothGrowth, paired = FALSE, 
+                  var.equal = FALSE, conf.level = 0.95)
+
+ressup <- with(testsup, data.frame(
+  't-statistic' = statistic,
+  'DoF' = parameter,
+  'p-value' = p.value,
+  'Lower CL' = conf.int[1],
+  'Upper CL' = conf.int[2],
+  'Group 1 mean' = estimate[1],
+  'Group 2 mean' = estimate[2],
+  row.names = 'Orange Juice vs Ascorbic Acid'
+))
+
+kable(x = signif(ressup, 3))
+
+data0.5 <- filter(ToothGrowth, dose == 0.5)
+test0.5 <- t.test(len ~ supp, data = data0.5, paired = FALSE,
+                  var.equal = FALSE, conf.level = 0.95)
+
+res0.5 <- with(test0.5, data.frame(
+  't-statistic' = statistic,
+  'DoF' = parameter,
+  'p-value' = p.value,
+  'Lower CL' = conf.int[1],
+  'Upper CL' = conf.int[2],
+  'OJ mean' = estimate[1],
+  'VC mean' = estimate[2],
+  'Dose' = 0.5
+))
+
+data1 <- filter(ToothGrowth, dose == 1)
+test1 <- t.test(len ~ supp, data = data1, paired = FALSE, 
+                var.equal = FALSE, conf.level = 0.95)
+
+res1 <- with(test1, data.frame(
+  't-statistic' = statistic,
+  'DoF' = parameter,
+  'p-value' = p.value,
+  'Lower CL' = conf.int[1],
+  'Upper CL' = conf.int[2],
+  'OJ mean' = estimate[1],
+  'VC mean' = estimate[2],
+  'Dose' = 1
+))
+
+data2 <- filter(ToothGrowth, dose == 2)
+test2 <- t.test(len ~ supp, data = data2, paired = FALSE, 
+                var.equal = FALSE, conf.level = 0.95)
+
+res2 <- with(test2, data.frame(
+  't-statistic' = statistic,
+  'DoF' = parameter,
+  'p-value' = p.value,
+  'Lower CL' = conf.int[1],
+  'Upper CL' = conf.int[2],
+  'OJ mean' = estimate[1],
+  'VC mean' = estimate[2],
+  'Dose' = 2
+))
+
+res_supdose <- res0.5 %>% bind_rows(res1) %>% bind_rows(res2)
+kable(x = signif(res_supdose, 3))
+```
+
