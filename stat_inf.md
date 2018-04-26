@@ -1,5 +1,5 @@
 ---
-title: "Inferential Data Analysis"
+title: "Effect of Vitamin C on Guinea Pig Tooth Growth"
 author: "Kevin Tham"
 date: "April 25, 2018"
 output:
@@ -12,7 +12,7 @@ output:
 
 
 
-# Inferential Data Analysis
+## Overview
 
 In this section, we will analyse the dataset named 'ToothGrowth' in the R datasets package. We will undertake a statistical study of the data in order to test the effect of Vitamin C on the tooth growth of guinea pigs.
 

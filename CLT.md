@@ -108,22 +108,37 @@ kable(x = signif(results, 3))
 Mean            5.010         5.000
 Variance        0.609         0.625
 
-We can see from the above table that the simulated and theoretical values of the mean and variance of the sample means closely match. 
+We can see from the above table that the simulated and theoretical values of the mean and variance of the sample means closely match.
 
-\newpage
-
-Finally, we can compare the distribution of the sample means with an actual normal distribution by plotting a histogram of the distribution of the sample means.
+Next, we can compare the distribution of the sample means with an actual normal distribution with the stated theoretical mean and variance by plotting a histogram of the distribution of the sample means:
 
 
 ```r
-bw = 0.3
-
 df_means <- data.frame('means'= means)
 
-ggplot(df_means, aes(means)) + geom_histogram(aes(y=..density..), binwidth=bw) +
+ggplot(df_means, aes(means)) + geom_histogram(aes(y=..density..), binwidth=0.3) +
   stat_function(fun=function(means) dnorm(means, mean=th_mean, sd=th_sd)) +
-  labs(title='Scaled Histogram of means drawn from \n exponential distribution',
-       x = 'Means', y = 'Density')
+  labs(x = 'Means', y = 'Density')
 ```
 
-<img src="CLT_files/figure-html/unnamed-chunk-6-1.png" style="display: block; margin: auto;" />
+<div class="figure" style="text-align: center">
+<img src="CLT_files/figure-html/unnamed-chunk-6-1.png" alt="\label{fig:fig1}Scaled Histogram of means drawn from exponential distribution. Black curve represents CLT normal distribution for comparison"  />
+<p class="caption">\label{fig:fig1}Scaled Histogram of means drawn from exponential distribution. Black curve represents CLT normal distribution for comparison</p>
+</div>
+
+We can see from the Fig. 1 that the distribution of sample means closely resembles that of the expected normal distribution. There is deviation from the expected distribution as it can be observed that the distribution of sample means is slightly skewed to the left. Therefore we can conclude that the means of 40 exponentials behave as predicted by the Central Limit Theorem.
+
+Finally, we can compare the distribution of the sample means with the distribution of the samples themselves.
+
+
+```r
+ggplot(data.frame(X = rawdat), aes(X)) + geom_histogram(aes(y=..density..), binwidth=1) +
+  stat_function(fun=dexp, args=list(rate=lambda)) + labs(x = 'X', y = 'Density')
+```
+
+<div class="figure" style="text-align: center">
+<img src="CLT_files/figure-html/unnamed-chunk-7-1.png" alt="\label{fig:fig2}Scaled Histogram of samples drawn from exponential distribution"  />
+<p class="caption">\label{fig:fig2}Scaled Histogram of samples drawn from exponential distribution</p>
+</div>
+
+We can see from Fig. 2 that the original samples, being drawn from an exponential distribution, have a vastly different distribution from the sample means.
